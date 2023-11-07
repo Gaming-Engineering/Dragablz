@@ -1514,12 +1514,13 @@ namespace Dragablz
                 throw new InvalidOperationException("NewItemFactory must be provided.");
 
             var newItem = NewItemFactory();
-            if (newItem == null) throw new ApplicationException("NewItemFactory returned null.");
+            if (newItem != null) //throw new ApplicationException("NewItemFactory returned null.");
+            {
+                AddToSource(newItem);
+                SelectedItem = newItem;
 
-            AddToSource(newItem);
-            SelectedItem = newItem;
-
-            Dispatcher.BeginInvoke(new Action(_dragablzItemsControl.InvalidateMeasure), DispatcherPriority.Loaded);
+                Dispatcher.BeginInvoke(new Action(_dragablzItemsControl.InvalidateMeasure), DispatcherPriority.Loaded);
+            }
         }
 
         private void PrepareChildContainerForItemOverride(DependencyObject dependencyObject, object o)
