@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -32,7 +33,7 @@ namespace Dragablz
             AddHandler(DragablzItem.DragDelta, new DragablzDragDeltaEventHandler(ItemDragDelta));
             AddHandler(DragablzItem.DragCompleted, new DragablzDragCompletedEventHandler(ItemDragCompleted));
             AddHandler(DragablzItem.DragStarted, new DragablzDragStartedEventHandler(ItemDragStarted));
-            AddHandler(DragablzItem.MouseDownWithinEvent, new DragablzItemEventHandler(ItemMouseDownWithinHandlerTarget));                        
+            AddHandler(DragablzItem.MouseDownWithinEvent, new DragablzItemEventHandler(ItemMouseDownWithinHandlerTarget));       
         }
 
         public static readonly DependencyProperty FixedItemCountProperty = DependencyProperty.Register(
@@ -114,6 +115,39 @@ namespace Dragablz
             get { return (double) GetValue(ItemsPresenterHeightProperty); }
             private set { SetValue(ItemsPresenterHeightPropertyKey, value); }
         }
+
+
+        #region Customisations
+
+        /// <summary>
+        /// SourceOrganised?.Invoke(object.ReferenceEquals(ItemsSource, Items) ? this : ItemsSource, organisedItems);
+        /// </summary>
+        public EventHandler<object[]> SourceOrganised;
+
+
+        public bool OrganiseSourceOnDragCompleted
+        {
+            get { return (bool) GetValue(OrganiseSourceOnDragCompletedProperty); }
+            set { SetValue(OrganiseSourceOnDragCompletedProperty, value); }
+        }
+        private static readonly DependencyProperty OrganiseSourceOnDragCompletedProperty =
+            DependencyProperty.Register("OrganiseSourceOnDragCompleted", typeof(bool), typeof(DragablzItemsControl), new PropertyMetadata(true));
+
+        /// <summary>
+        /// Invoke <see cref="SourceOrganised"/> event when drag completed.
+        /// Passes organised source items.
+        /// </summary>
+        private void OrganiseSource()
+        {
+            if (ItemsOrganiser == null) return;
+
+            var organisedItems = ItemsOrganiser.Sort(DragablzItems()).Select(di => di.Content).ToArray();
+
+            SourceOrganised?.Invoke(this, organisedItems);
+        }
+
+        #endregion
+
 
         /// <summary>
         /// Adds an item to the underlying source, displaying in a specific position in rendered control.
@@ -304,6 +338,7 @@ namespace Dragablz
             eventArgs.Handled = true;
 
             //wowsers
+            if (OrganiseSourceOnDragCompleted) OrganiseSource();
             Dispatcher.BeginInvoke(new Action(InvalidateMeasure));
             Dispatcher.BeginInvoke(new Action(InvalidateMeasure), DispatcherPriority.Loaded);
         }
